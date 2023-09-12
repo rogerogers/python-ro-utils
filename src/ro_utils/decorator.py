@@ -75,3 +75,14 @@ def retry_when_error_with_times(times):
     """
 
     return retry_when_error_with_params(times=times)
+
+
+def singleton(cls):
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper
