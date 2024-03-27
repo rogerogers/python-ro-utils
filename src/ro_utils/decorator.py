@@ -1,3 +1,4 @@
+import asyncio
 import time
 from functools import wraps
 import logging
@@ -38,6 +39,52 @@ def retry_when_error(func):
                     logging.exception(e)
 
     return fn
+
+
+def async_retry_when_error(func):
+    """
+    retry when error async, default 3 times
+    :param func:
+    :return:
+    """
+
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        for attempt in range(3):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                if attempt == 2:
+                    logging.exception(e)
+
+    return wrapper
+
+
+def async_retry_when_error_with_params(max_attempts=3, backoff_factor=1):
+    """
+    return when error async with param, delay and times
+    :param max_attempts:
+    :param backoff_factor:
+    :return:
+    """
+
+    async def retry_decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts:
+                        logging.exception(e)
+                    delay = backoff_factor * (2 ** (attempt - 1))
+                    logging.warning(f"Caught exception {e}. Retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+            return None
+
+        return wrapper
+
+    return retry_decorator
 
 
 def retry_when_error_with_params(*out_args, **out_kwargs):
