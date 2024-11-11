@@ -1,16 +1,19 @@
-[tool.poetry]
+[project]
 name = "ro-utils"
-version = "0.3.0"
-description = ""
-authors = ["rogerogers <rogers@rogerogers.com>"]
+version = "0.4.0"
+description = "utils for daily usage"
+authors = [{ name = "rogerogers", email = "rogers@rogerogers.com" }]
+requires-python = ">=3.10"
 readme = "readme.md"
-repository = "https://github.com/rogerogers/python-ro-utils"
-packages = [{ include = "ro_utils", from = "src" }]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-
+[project.urls]
+Homepage = "https://github.com/rogerogers/python-ro-utils"
+Repository = "https://github.com/rogerogers/python-ro-utils"
+Issues = "https://github.com/rogerogers/python-ro-utils/issues"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "ro_utils" = "src/ro_utils" }
