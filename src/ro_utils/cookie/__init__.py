@@ -1,12 +1,6 @@
-import http.cookies
+from .base import CookieBase
+from .json_cookie import JSONCookie
+from .parser import parse_cookie_str
+from .text_cookie import TextCookie
 
-
-def parse_cookie_str(cookie_str: str) -> dict[str, str]:
-    """
-    convert cookie_str to cookie dict
-    :param cookie_str:
-    :return:
-    """
-    cookies = http.cookies.SimpleCookie()
-    cookies.load(cookie_str)
-    return {k: v.value for k, v in cookies.items()}
+__all__ = ["CookieBase", "JSONCookie", "TextCookie", "parse_cookie_str"]

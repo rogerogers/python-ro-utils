@@ -1,84 +1,111 @@
 import asyncio
-import time
-from functools import wraps
 import logging
+import threading
+import time
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
-def continue_when_error(func):
+def continue_when_error(func: Callable[..., Any]) -> Callable[..., Any]:
     """
-    continue when error
-    :param func:
-    :return:
+    Catch any exception during function execution, log it, and return None.
     """
 
     @wraps(func)
-    def fn(*args, **kwargs):
+    def fn(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logging.error(e)
+            logger.error("Error in %s: %s", func.__name__, e)
 
     return fn
 
 
-def retry_when_error(func):
+def retry_when_error(
+    func: Callable[..., Any] | None = None, *, reraise: bool = False
+) -> Callable[..., Any]:
     """
-    retry when error, default 3 times
-    :param func:
-    :return:
-    """
-
-    @wraps(func)
-    def fn(*args, **kwargs):
-        """docstring for fn"""
-        for k, item in enumerate(range(3)):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if k == 2:
-                    logging.exception(e)
-
-    return fn
-
-
-def async_retry_when_error(func):
-    """
-    retry when error async, default 3 times
-    :param func:
-    :return:
+    Retry when error occurs, default 3 times.
     """
 
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        for attempt in range(3):
-            try:
-                return await func(*args, **kwargs)
-            except Exception as e:
-                if attempt == 2:
-                    logging.exception(e)
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            for k in range(3):
+                try:
+                    return fn(*args, **kwargs)
+                except Exception:
+                    if k == 2:
+                        logger.exception("Failed after 3 retries in %s", fn.__name__)
+                        if reraise:
+                            raise
+            return None
 
-    return wrapper
+        return wrapper
+
+    if func is not None:
+        return decorator(func)
+    return decorator
 
 
-def async_retry_when_error_with_params(max_attempts=3, backoff_factor=1):
+def async_retry_when_error(
+    func: Callable[..., Any] | None = None, *, reraise: bool = False
+) -> Callable[..., Any]:
     """
-    return when error async with param, delay and times
-    :param max_attempts:
-    :param backoff_factor:
-    :return:
+    Retry async function when error occurs, default 3 times.
     """
 
-    async def retry_decorator(func):
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(fn)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            for attempt in range(3):
+                try:
+                    return await fn(*args, **kwargs)
+                except Exception:
+                    if attempt == 2:
+                        logger.exception("Failed after 3 retries in %s", fn.__name__)
+                        if reraise:
+                            raise
+            return None
+
+        return wrapper
+
+    if func is not None:
+        return decorator(func)
+    return decorator
+
+
+def async_retry_when_error_with_params(
+    max_attempts: int = 3, backoff_factor: float = 1, reraise: bool = False
+) -> Callable[..., Any]:
+    """
+    Retry async function with custom attempts, exponential backoff, and optional reraise.
+    """
+
+    def retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             for attempt in range(1, max_attempts + 1):
                 try:
                     return await func(*args, **kwargs)
                 except Exception as e:
                     if attempt == max_attempts:
-                        logging.exception(e)
+                        logger.exception(
+                            "Failed after %d attempts in %s", max_attempts, func.__name__
+                        )
+                        if reraise:
+                            raise
+                        return None
                     delay = backoff_factor * (2 ** (attempt - 1))
-                    logging.warning(f"Caught exception {e}. Retrying in {delay} seconds...")
+                    logger.warning(
+                        "Caught exception %s in %s. Retrying in %s seconds...",
+                        e,
+                        func.__name__,
+                        delay,
+                    )
                     await asyncio.sleep(delay)
             return None
 
@@ -87,49 +114,59 @@ def async_retry_when_error_with_params(max_attempts=3, backoff_factor=1):
     return retry_decorator
 
 
-def retry_when_error_with_params(*out_args, **out_kwargs):
+def retry_when_error_with_params(
+    times: int = 5,
+    delay: float = 0,
+    reraise: bool = False,
+    **kwargs: Any,
+) -> Callable[..., Any]:
     """
-    return when error with param, delay and times
-    :param out_args:
-    :param out_kwargs:
-    :return:
+    Retry when error occurs with custom times and delay between attempts.
     """
+    times = int(kwargs.get("times", times))
+    delay = float(kwargs.get("delay", delay))
 
-    def retry_when_error_occur(func):
+    def retry_when_error_occur(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def fn(*args, **kwargs):
-            times = int(out_kwargs.get("times", 5))
-            delay = int(out_kwargs.get("delay", 0))
-            for k, item in enumerate(range(times)):
+        def fn(*args: Any, **kwargs: Any) -> Any:
+            for k in range(times):
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except Exception:
                     if k == times - 1:
-                        logging.exception(e)
+                        logger.exception("Failed after %d attempts in %s", times, func.__name__)
+                        if reraise:
+                            raise
+                        return None
                     if delay > 0:
                         time.sleep(delay)
+            return None
 
         return fn
 
     return retry_when_error_occur
 
 
-def retry_when_error_with_times(times):
+def retry_when_error_with_times(times: int, reraise: bool = False) -> Callable[..., Any]:
     """
-    retry when error with times params
-    :param times:
-    :return:
+    Retry when error occurs with specified times.
     """
+    return retry_when_error_with_params(times=times, reraise=reraise)
 
-    return retry_when_error_with_params(times=times)
 
+def singleton(cls: type) -> Callable[..., Any]:
+    """
+    Thread-safe singleton class decorator.
+    """
+    instances: dict[type, Any] = {}
+    lock = threading.Lock()
 
-def singleton(cls):
-    instances = {}
-
-    def wrapper(*args, **kwargs):
+    @wraps(cls)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
+            with lock:
+                if cls not in instances:
+                    instances[cls] = cls(*args, **kwargs)
         return instances[cls]
 
     return wrapper

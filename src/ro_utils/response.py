@@ -1,8 +1,25 @@
+from typing import Any, TypedDict
+
+
+class ResponseDict(TypedDict):
+    success: bool
+    data: Any
+    code: int
+    message: str
+    error: str
+    error_code: int
+
+
 def response(
-    success: bool, data, code: int, message: str, error: str, error_code: int = 0
-):
+    success: bool,
+    data: Any,
+    code: int,
+    message: str,
+    error: str,
+    error_code: int = 0,
+) -> ResponseDict:
     """
-    return a dictionary containing the results of the request and the associated error message
+    Return a dictionary containing the results of the request and the associated error message.
 
     Parameters:
         success (bool): Indicates whether the request was successful
@@ -13,12 +30,12 @@ def response(
         error_code (int): Error code associated with the error message
 
     Return:
-        dict: A dictionary containing the response information
+        ResponseDict: A dictionary containing the response information
 
-    Using case:
+    Usage example:
         >>> response(True, {"key": "value"}, 200, "success msg", "", 0)
         {'success': True, 'data': {'key': 'value'}, 'code': 200, 'message': 'success msg', 'error': '', 'error_code': 0}
-    """  # noqa: E501
+    """
     return {
         "success": success,
         "data": data,
@@ -29,21 +46,21 @@ def response(
     }
 
 
-def success(data, code: int = 200):
+def success(data: Any, code: int = 200) -> ResponseDict:
     """
-    This function is used to return a dictionary containing the results of the request and the associated error message.
+    Return a success response dictionary.
 
     Parameters:
         data: The data returned by the request
-        code (int): HTTP status code indicating the success or failure of the request
+        code (int): HTTP status code indicating the success of the request
 
     Return:
-        dict: A dictionary containing the success status, data, and a success message
+        ResponseDict: A dictionary containing the success status, data, and a success message
 
     Usage example:
         >>> success({"key": "value"}, 200)
         {'success': True, 'data': {'key': 'value'}, 'code': 200, 'message': 'success', 'error': '', 'error_code': 0}
-    """  # noqa: E501
+    """
     return response(
         True,
         data,
@@ -54,13 +71,13 @@ def success(data, code: int = 200):
 
 
 def error(
-    message,
+    message: str,
     description: str,
     code: int,
     error_code: int = 0,
-):
+) -> ResponseDict:
     """
-    Generate a dictionary of error responses
+    Generate a dictionary of error responses.
 
     Parameters:
         message (str): Error message
@@ -69,18 +86,23 @@ def error(
         error_code (int): Error code
 
     Return:
-        dict: Error response dictionary
+        ResponseDict: Error response dictionary
 
     Usage example:
         >>> error("Request failed", "Server internal error", 500, 5000)
         {'success': False, 'data': None, 'code': 500, 'message': 'Request failed', 'error': 'Server internal error', 'error_code': 5000}
-    """  # noqa: E501
+    """
     return response(False, None, code, message, description, error_code)
 
 
-def client_error(message, description="", code: int = 400, error_code: int = 0):
+def client_error(
+    message: str,
+    description: str = "",
+    code: int = 400,
+    error_code: int = 0,
+) -> ResponseDict:
     """
-    Generate a dictionary of error responses
+    Generate a dictionary of client error responses.
 
     Parameters:
         message (str): Error message
@@ -89,20 +111,23 @@ def client_error(message, description="", code: int = 400, error_code: int = 0):
         error_code (int): Error code
 
     Return:
-        dict: Error response dictionary
+        ResponseDict: Error response dictionary
 
     Usage example:
         >>> client_error("Request failed", "Parameter error", 400, 1001)
         {'success': False, 'data': None, 'code': 400, 'message': 'Request failed', 'error': 'Parameter error', 'error_code': 1001}
-    """  # noqa: E501
+    """
     return error(message, description, code, error_code)
 
 
 def server_error(
-    message: str, description: str = "", code: int = 500, error_code: int = 0
-):
+    message: str,
+    description: str = "",
+    code: int = 500,
+    error_code: int = 0,
+) -> ResponseDict:
     """
-    Generate a dictionary of error responses
+    Generate a dictionary of server error responses.
 
     Parameters:
         message (str): Error message
@@ -111,12 +136,12 @@ def server_error(
         error_code (int): Error code
 
     Return:
-        dict: Error response dictionary
+        ResponseDict: Error response dictionary
 
     Usage example:
         >>> server_error("Request failed", "Server internal error", 500, 5000)
         {'success': False, 'data': None, 'code': 500, 'message': 'Request failed', 'error': 'Server internal error', 'error_code': 5000}
-    """  # noqa: E501
+    """
     return error(message, description, code, error_code)
 
 

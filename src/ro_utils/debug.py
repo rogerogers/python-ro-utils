@@ -1,11 +1,9 @@
-from pprint import PrettyPrinter
+import pprint as _py_pprint
+from typing import Any
 
 
-def pprint(args: object):
+def pprint(obj: Any, *args: Any, **kwargs: Any) -> None:
     """
-    pretty print
-    :param args:
-    :return:
+    Pretty-print an object with optional formatting arguments.
     """
-    p = PrettyPrinter()
-    p.pprint(args)
+    _py_pprint.pprint(obj, *args, **kwargs)
